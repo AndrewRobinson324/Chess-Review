@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <h1>Game Analysis</h1>
+    <div>
+        <h2>PGN</h2>
+        <pre>{{ game.pgn }}</pre>
+    </div>
+    <div>
+        <h2>Analysis</h2>
+        <ul>
+            {% for move in game.analysis %}
+                <li>
+                    <strong>Move:</strong> {{ move.move }}<br>
+                    <strong>FEN:</strong> {{ move.fen }}<br>
+                    <strong>Analysis:</strong> {{ move.analysis }}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>
