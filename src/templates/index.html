@@ -1,17 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
     <title>Chess Review App</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
     <h1>Chess Review App</h1>
     <form id="pgnForm">
-        <input type = "file" id = "pgnFile" accept = ".pgn">
+        <input type="file" id="pgnFile" accept=".pgn" />
         <button type="submit">Analyze</button>
     </form>
-    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script>
+        document.getElementById('pgnForm').addEventListener('submit', (event) => {
+            event.preventDefault();
+            const fileInput = document.getElementById('pgnFile');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const pgn = e.target.result;
+                    fetch('/games', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pgn: pgn }),
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            if (data.game_id) {
+                                // Immediately navigate to the analysis page
+                                window.location.href = `/games/${data.game_id}`;
+                            } else {
+                                alert('Failed to analyze the game.');
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Error:', error);
+                            alert('An error occurred while analyzing the game.');
+                        });
+                };
+                reader.readAsText(file);
+            } else {
+                alert('Please select a PGN file to upload.');
+            }
+        });
+    </script>
 </body>
 </html>

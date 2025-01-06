@@ -1,28 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Analysis</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Analysis</title>
+  <link rel="stylesheet" href="/static/css/chessboard-1.0.0.min.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="/static/js/chessboard-1.0.0.min.js"></script>
+  <script src="/static/js/chess.js"></script> <!-- Include chess.js for PGN parsing -->
+  <style>
+    #board {
+      width: 400px;
+      margin: 20px auto;
+    }
+    #playMoves {
+      display: block;
+      margin: 20px auto;
+    }
+    #pgn {
+      width: 80%;
+      margin: 20px auto;
+      white-space: pre-wrap; /* Preserve whitespace and line breaks */
+    }
+  </style>
 </head>
 <body>
-    <h1>Game Analysis</h1>
-    <div>
-        <h2>PGN</h2>
-        <pre>{{ game.pgn }}</pre>
-    </div>
-    <div>
-        <h2>Analysis</h2>
-        <ul>
-            {% for move in game.analysis %}
-                <li>
-                    <strong>Move:</strong> {{ move.move }}<br>
-                    <strong>FEN:</strong> {{ move.fen }}<br>
-                    <strong>Analysis:</strong> {{ move.analysis }}
-                </li>
-            {% endfor %}
-        </ul>
-    </div>
+  <div id="board"></div>
+  <button id="playMoves">Play Moves</button>
+  <div id="pgn">{{ pgn }}</div> <!-- Display the PGN -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var board = Chessboard('board', {
+        draggable: true,
+        position: 'start', // Initialize with the standard starting position
+        pieceTheme: function(piece) {
+          var url = '/static/img/chesspieces/wikipedia/' + piece + '.png';
+          console.log('Loading piece image from:', url); // Debugging information
+          return url;
+        }
+      });
+      console.log("Chessboard initialized"); // Debugging information
+
+      var game = new Chess();
+      var pgn = `{{ pgn|safe }}`;
+      console.log("Loaded PGN:", pgn); // Debugging information
+      game.load_pgn(pgn);
+
+      var moves = game.history();
+      console.log("Moves:", moves); // Debugging information
+
+      document.getElementById('playMoves').onclick = function() {
+        let i = 0;
+        function makeMove() {
+          if (i < moves.length) {
+            game.move(moves[i]);
+            board.position(game.fen());
+            i++;
+            setTimeout(makeMove, 500);
+          }
+        }
+        makeMove();
+      };
+    });
+  </script>
 </body>
 </html>

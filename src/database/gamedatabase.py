@@ -8,13 +8,9 @@ from config import DB_URI
 client = MongoClient(DB_URI)
 db = client.chess_review_app
 
-def save_game_to_db(pgn, analysis):
-    game = {
-        "pgn": pgn,
-        "analysis": [serialize_analysis(a) for a in analysis],
-        "date": datetime.datetime.utcnow()
-    }
-    result = db.games.insert_one(game)
+def save_game_to_db(game_data):
+    game_data["date"] = datetime.datetime.utcnow()
+    result = db.games.insert_one(game_data)
     inserted_id = result.inserted_id
     print(f"Game saved with ID: {inserted_id}")
     return inserted_id
