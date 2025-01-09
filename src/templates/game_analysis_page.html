@@ -7,7 +7,9 @@
   <link rel="stylesheet" href="/static/css/chessboard-1.0.0.min.css">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="/static/js/chessboard-1.0.0.min.js"></script>
-  <script src="/static/js/chess.js"></script> <!-- Include chess.js for PGN parsing -->
+  <script type="module">
+    import { Chess } from '/static/js/chess.js';
+  </script>
   <style>
     #board {
       width: 400px;
@@ -22,45 +24,136 @@
       margin: 20px auto;
       white-space: pre-wrap; /* Preserve whitespace and line breaks */
     }
+    .highlight {
+      background-color: #a9a9a9;
+    }
   </style>
 </head>
 <body>
   <div id="board"></div>
   <button id="playMoves">Play Moves</button>
   <div id="pgn">{{ pgn }}</div> <!-- Display the PGN -->
-  <script>
+  <script type="module">
+    import { Chess } from '/static/js/chess.js';
+
     document.addEventListener("DOMContentLoaded", function() {
-      var board = Chessboard('board', {
+      console.log('DOM fully loaded and parsed'); // Debugging information
+
+      const chess = new Chess();
+      const board = Chessboard('board', {
         draggable: true,
         position: 'start', // Initialize with the standard starting position
         pieceTheme: function(piece) {
-          var url = '/static/img/chesspieces/wikipedia/' + piece + '.png';
+          const url = '/static/img/chesspieces/wikipedia/' + piece + '.png';
           console.log('Loading piece image from:', url); // Debugging information
           return url;
+        },
+        onDragStart: function(source, piece, position, orientation) {
+          console.log('Drag start:', source, piece, position, orientation); // Debugging information
+
+          // Do not pick up pieces if the game is over
+          if (chess.isGameOver()) return false;
+
+          // Only pick up pieces for the side to move
+          if ((chess.turn() === 'w' && piece.search(/^b/) !== -1) ||
+              (chess.turn() === 'b' && piece.search(/^w/) !== -1)) {
+            return false;
+          }
+        },
+        onDrop: function(source, target) {
+          console.log('Drop:', source, target); // Debugging information
+
+          // See if the move is legal
+          const move = chess.move({
+            from: source,
+            to: target,
+            promotion: 'q' // Automatically promote to a queen for simplicity
+          });
+
+          // Illegal move
+          if (move === null) {
+            console.log('Illegal move:', source, target); // Debugging information
+            return 'snapback';
+          }
+
+          // Update the board position after the move
+          board.position(chess.fen());
+        },
+        onMouseoutSquare: function(square, piece) {
+          console.log('Mouse out square:', square, piece); // Debugging information
+          // Remove highlight of the square
+          removeGreySquares();
+        },
+        onMouseoverSquare: function(square, piece) {
+          console.log('Mouse over square:', square, piece); // Debugging information
+          // Get list of possible moves for this square
+          const moves = chess.moves({
+            square: square,
+            verbose: true
+          });
+
+          // Exit if there are no moves available for this square
+          if (moves.length === 0) return;
+
+          // Highlight the square they moused over
+          greySquare(square);
+
+          // Highlight the possible squares for this piece
+          for (let i = 0; i < moves.length; i++) {
+            greySquare(moves[i].to);
+          }
         }
       });
-      console.log("Chessboard initialized"); // Debugging information
 
-      var game = new Chess();
-      var pgn = `{{ pgn|safe }}`;
-      console.log("Loaded PGN:", pgn); // Debugging information
-      game.load_pgn(pgn);
+      console.log('Chessboard initialized:', board); // Debugging information
 
-      var moves = game.history();
-      console.log("Moves:", moves); // Debugging information
+      const pgn = document.getElementById('pgn').innerText;
+      console.log('Loaded PGN:', pgn); // Debugging information
 
-      document.getElementById('playMoves').onclick = function() {
-        let i = 0;
+      // Load the PGN
+      try {
+        chess.loadPgn(pgn);
+        console.log('PGN loaded successfully');
+      } catch (error) {
+        console.error('Failed to load PGN:', error);
+        return;
+      }
+
+      const moves = chess.history({ verbose: true });
+      console.log('Moves:', moves); // Debugging information
+
+      let currentMove = 0;
+
+      document.getElementById('playMoves').addEventListener('click', function() {
+        console.log('Play Moves button clicked'); // Debugging information
+
         function makeMove() {
-          if (i < moves.length) {
-            game.move(moves[i]);
-            board.position(game.fen());
-            i++;
-            setTimeout(makeMove, 500);
+          if (currentMove < moves.length) {
+            const move = moves[currentMove];
+            console.log('Making move:', move); // Debugging information
+            chess.move(move);
+            board.position(chess.fen());
+            currentMove++;
+            setTimeout(makeMove, 500); // Adjust the delay as needed
           }
         }
         makeMove();
-      };
+      });
+
+      function greySquare(square) {
+        const squareEl = $('#board .square-' + square);
+
+        let background = '#a9a9a9';
+        if (squareEl.hasClass('black-3c85d') === true) {
+          background = '#696969';
+        }
+
+        squareEl.css('background', background);
+      }
+
+      function removeGreySquares() {
+        $('#board .square-55d63').css('background', '');
+      }
     });
   </script>
 </body>

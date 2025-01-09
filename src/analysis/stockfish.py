@@ -2,7 +2,7 @@ import chess.engine
 from pymongo import MongoClient
 
 def analyze_game(fen, depth=15, multi_pv=3):
-    stockfish_path = "C:/Users/rocky/OneDrive/Documents/Chess Review bot/stockfish/stockfish-windows-x86-64-sse41-popcnt.exe"
+    stockfish_path = "E:/Coding Projects/chess Review/Chess-Review/stockfish-windows-x86-64-sse41-popcnt.exe"
     with chess.engine.SimpleEngine.popen_uci(stockfish_path) as engine:
         results = engine.analyse(chess.Board(fen), chess.engine.Limit(depth=depth), multipv=multi_pv)
         print(f"Analysis results for FEN {fen}: {results}")
